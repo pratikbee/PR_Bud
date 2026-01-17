@@ -550,6 +550,14 @@ export default function Dashboard() {
           </Card>
         </>
       )}
+
+      {/* Footer */}
+      <footer className="mt-12 pt-8 border-t border-border">
+        <div className="text-center text-sm text-muted-foreground">
+          Made with <span className="text-red-500">❤️</span> by{" "}
+          <span className="font-semibold text-foreground">Pratik</span>
+        </div>
+      </footer>
     </div>
   );
 }
