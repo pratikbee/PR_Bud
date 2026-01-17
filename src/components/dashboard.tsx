@@ -54,8 +54,10 @@ export default function Dashboard() {
       setError(error.message || "Failed to analyze code");
     },
     // Optional: useful for debugging the final parsed object
-    onFinish: ({ object: finalObject }: { object: any }) => {
-      console.log("Full Audit Result:", finalObject);
+    onFinish: ({ object: finalObject }: { object: SecurityAnalysis | undefined }) => {
+      if (finalObject) {
+        console.log("Full Audit Result:", finalObject);
+      }
     },
   });
 
@@ -71,7 +73,16 @@ export default function Dashboard() {
   const analysis: SecurityAnalysis | null = object ? {
     summary: object.summary ?? "",
     overallRisk: (object.overallRisk as "high" | "medium" | "low") ?? "low",
-    issues: object.issues ?? [],
+    issues: (object.issues ?? [])
+      .filter((issue): issue is NonNullable<typeof issue> => issue !== undefined)
+      .map(issue => ({
+        severity: (issue.severity as "high" | "medium" | "low") ?? "low",
+        category: issue.category ?? "",
+        description: issue.description ?? "",
+        lineNumber: issue.lineNumber ?? null,
+        filePath: issue.filePath ?? null,
+        recommendation: issue.recommendation ?? "",
+      })),
     statistics: {
       totalIssues: object.statistics?.totalIssues ?? 0,
       highRisk: object.statistics?.highRisk ?? 0,
@@ -111,8 +122,9 @@ export default function Dashboard() {
 
       // Automatically start analysis using useObject
       submit({ diff: data.diff });
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch PR");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch PR";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -420,10 +432,16 @@ export default function Dashboard() {
                     {isAnalyzing && " (streaming...)"}
                   </p>
                   <div className="space-y-2">
-                    {object.issues.map((issue: any, index: number) => (
+                    {(object.issues ?? []).filter((issue): issue is SecurityIssue => 
+                      issue !== undefined && 
+                      typeof issue === 'object' && 
+      'severity' in issue && 
+      'category' in issue && 
+      'description' in issue
+    ).map((issue: SecurityIssue, index: number) => (
                       <div key={index} className="p-2 bg-muted rounded text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold">{issue?.category ?? "Unknown"}</span>
+                          <span className="font-semibold">{issue.category ?? "Unknown"}</span>
                           <span className={`px-2 py-0.5 rounded text-xs ${
                             issue?.severity === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
                             issue?.severity === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :

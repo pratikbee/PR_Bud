@@ -18,10 +18,11 @@ ${diff.substring(0, 30000)}`,
     });
 
     return result.toTextStreamResponse();
-  } catch (error: any) {
-    console.error("Audit Stream Error:", error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to analyze code";
+    console.error("Audit Stream Error:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
